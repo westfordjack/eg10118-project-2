@@ -18,16 +18,16 @@ while True:
 let baseline = input.magneticForce(Dimension.X)
 //  Take a baseline reading of magnetic strength
 console.log(baseline)
-control.waitMicros(10000000)
+control.waitMicros(1000000)
 while (true) {
-    value = input.magneticForce(Dimension.X)
+    value = input.magneticForce(Dimension.Y)
     console.log(value)
-    if (Math.abs(value - baseline) > 30) {
+    if (Math.abs(value - baseline) > 50) {
         basic.showIcon(IconNames.No)
     } else {
         //  Show a cross symbol
         basic.clearScreen()
     }
     
-    control.waitMicros(50000)
+    control.waitMicros(25000)
 }

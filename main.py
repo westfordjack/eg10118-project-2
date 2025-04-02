@@ -19,16 +19,16 @@ while True:
 
 baseline = input.magnetic_force(Dimension.X) # Take a baseline reading of magnetic strength
 print(baseline)
-control.wait_micros(10000000)
+control.wait_micros(1000000)
 
 while True:
-    value = input.magnetic_force(Dimension.X)
+    value = input.magnetic_force(Dimension.Y)
     print(value)
 
-    if abs(value - baseline) > 30:
+    if abs(value - baseline) > 50:
         basic.show_icon(IconNames.NO)  
           # Show a cross symbol
     else:
         basic.clear_screen()
     
-    control.wait_micros(50000)
+    control.wait_micros(25000)
