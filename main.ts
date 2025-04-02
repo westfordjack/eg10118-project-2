@@ -1,9 +1,8 @@
 let value: number;
-let angle1: number;
 //  EG10118 Section 12 Project 2 Program: Bomb Sniffing Robot
 //  Nathan Burke, Edan Czarobski, Ben Muckian, Jack Whitman
-let leftSpeed = 30
-let rightSpeed = 30
+let leftSpeed = 20
+let rightSpeed = 20
 /** 
 while True:
     CutebotPro.color_light(CutebotProRGBLight.RGBL, 0xffffff)
@@ -16,32 +15,31 @@ while True:
         control.wait_micros(450000)
 
  */
-let baseline = Math.abs(input.magneticForce(Dimension.X))
+let baseline = Math.abs(input.magneticForce(Dimension.Y))
 //  Take a baseline reading of magnetic strength
+console.log(baseline)
 control.waitMicros(3000000)
 CutebotPro.pwmCruiseControl(leftSpeed, rightSpeed)
-let logic = true
-while (logic) {
+let mainrun = true
+while (mainrun) {
+    // continually takes magnetic vals
     value = Math.abs(input.magneticForce(Dimension.Y))
+    console.log(value)
+    // if magnet is detected
     if (Math.abs(value - baseline) > 30) {
+        console.log("True")
+        // display X
         basic.showIcon(IconNames.No)
-        CutebotPro.fullAstern()
+        // stop bot
         CutebotPro.stopImmediately(CutebotProMotors.ALL)
+        control.waitMicros(2000000)
+        // initialize wheel rotation to zero
         CutebotPro.clearWheelTurn(CutebotProMotors1.M1)
-        // CutebotPro.clear_wheel_turn(CutebotProMotors1.M2)
-        CutebotPro.pwmCruiseControl(leftSpeed, -rightSpeed)
-        while (logic) {
-            angle1 = CutebotPro.readDistance(CutebotProMotors1.M1)
-            //  angle2 = CutebotPro.read_distance(CutebotProMotors1.M2)
-            //  angle3 = (angle1+angle2)/2
-            if (angle1 > 400) {
-                CutebotPro.stopImmediately(CutebotProMotors.ALL)
-                logic = false
-            }
-            
-        }
+        // spin robot around
+        CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, 180)
+        CutebotPro.pwmCruiseControl(leftSpeed, rightSpeed)
+        control.waitMicros(100000)
     }
     
     basic.showIcon(IconNames.Yes)
-    CutebotPro.pwmCruiseControl(leftSpeed, rightSpeed)
 }
