@@ -123,20 +123,42 @@ function navigate_maze() {
     
     //  Go until the magnet is found, following the left wall
     while (!magnet_found()) {
-        obs_forward = obstacle()
-        turn_left()
-        if (!obstacle()) {
-            forward()
-        } else if (!obs_forward) {
-            turn_right()
-            forward()
-        } else {
-            turn_180()
+        if (left) {
+            obs_forward = obstacle()
+            turn_left()
             if (!obstacle()) {
                 forward()
-            } else {
+            } else if (!obs_forward) {
                 turn_right()
                 forward()
+            } else {
+                turn_180()
+                if (!obstacle()) {
+                    forward()
+                } else {
+                    turn_right()
+                    forward()
+                }
+                
+            }
+            
+        } else {
+            obs_forward = obstacle()
+            turn_right()
+            if (!obstacle()) {
+                forward()
+            } else if (!obs_forward) {
+                turn_left()
+                forward()
+            } else {
+                turn_180()
+                if (!obstacle()) {
+                    forward()
+                } else {
+                    turn_left()
+                    forward()
+                }
+                
             }
             
         }
