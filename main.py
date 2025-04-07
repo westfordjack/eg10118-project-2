@@ -5,6 +5,12 @@ straight_speed = 20 # Nominal speed of the robot
 left = True # Does the robot hug the left or right side of the line
 turn = 90 # This number should represent a right turn
 
+#when a button is pressed it changes the side the bot follows
+if input.button_is_pressed(Button.A):
+    left = True
+if input.button_is_pressed(Button.B):
+    left = False
+
 # Navigation parameters
 navigation = [(0,0)]
 direction = 0 # 0 = East, 1 = North, 2 = West, 3 = South
@@ -65,7 +71,8 @@ def turn_left():
 
 def turn_180():
     global direction
-    CutebotPro.trolley_steering(CutebotProTurn.LEFT_IN_PLACE, turn * 2)
+    CutebotPro.trolley_steering(CutebotProTurn.LEFT_IN_PLACE, turn)
+    CutebotPro.trolley_steering(CutebotProTurn.LEFT_IN_PLACE, turn)
     direction = (direction + 2) % 4
 
 # Checks for an obstacle

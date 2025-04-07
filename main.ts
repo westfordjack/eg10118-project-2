@@ -6,6 +6,15 @@ let left = true
 //  Does the robot hug the left or right side of the line
 let turn = 90
 //  This number should represent a right turn
+// when a button is pressed it changes the side the bot follows
+if (input.buttonIsPressed(Button.A)) {
+    left = true
+}
+
+if (input.buttonIsPressed(Button.B)) {
+    left = false
+}
+
 //  Navigation parameters
 let navigation = [[0, 0]]
 let direction = 0
@@ -73,7 +82,8 @@ function turn_left() {
 
 function turn_180() {
     
-    CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, turn * 2)
+    CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, turn)
+    CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, turn)
     direction = (direction + 2) % 4
 }
 
