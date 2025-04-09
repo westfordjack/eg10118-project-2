@@ -3,7 +3,7 @@
 
 straight_speed = 20 # Nominal speed of the robot
 left = True # Does the robot hug the left or right side of the line
-turn = 93 # This number should represent a right turn
+turn = 92 # This number should represent a right turn
 
 # when a button is pressed it changes the side the bot follows
 if input.button_is_pressed(Button.A):
@@ -22,12 +22,6 @@ hwalls = [[0, 0]]
 vwalls = [[0, 0]]
 hwalls.clear()
 vwalls.clear()
-
-# Wall returning efficiency
-hwalls_clear = [[0, 0]]
-vwalls_clear = [[0, 0]]
-hwalls_clear.clear()
-vwalls_clear.clear()
 
 # Setting block size and radio stuff
 CutebotPro.set_block_cnt(12, CutebotProDistanceUnits.FT)
@@ -70,7 +64,6 @@ def follow_line():
     else:
         CutebotPro.pwm_cruise_control(turn_speed, straight_speed)
 
-
 # Turning functions
 def turn_right():
     global direction
@@ -81,6 +74,7 @@ def turn_right():
     
 def turn_left():
     global direction
+    CutebotPro.pwm_cruise_control(0, 0)
     CutebotPro.trolley_steering(CutebotProTurn.LEFT_IN_PLACE, turn)
     direction = (direction + 1) % 4
 
@@ -102,22 +96,13 @@ def obstacle():
             vwalls.append([x, y])
         else:
             hwalls.append([x, y])
-    # If there is no obstacle, record its absence in the proper array
-    else:
-        if direction == 0:
-            vwalls_clear.append([x + 1, y])
-        elif direction == 1:
-            hwalls_clear.append([x, y + 1])
-        elif direction == 2:
-            vwalls_clear.append([x, y])
-        else:
-            hwalls_clear.append([x, y])
     
     return obstacle_there
 
 # Move forward, updating direction
 def forward():
     global x, y
+    global straight_speed
     if direction == 0:
         x += 1
     elif direction == 1:
@@ -127,7 +112,76 @@ def forward():
     else:
         y -= 1
     navigation.append([x, y])
-    CutebotPro.run_block_cnt(1)
+    
+    one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
+    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
+    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
+    four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
+
+    CutebotPro.pwm_cruise_control(10, 10)
+
+    while one and two and three and four:
+        control.wait_micros(100)
+        one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
+        two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
+        three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
+        four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
+
+    CutebotPro.pwm_cruise_control(0, 0)
+    one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
+    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
+    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
+    four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
+
+    if not one:
+        CutebotPro.pwm_cruise_control(0, 10)
+        while four:
+            control.wait_micros(100)
+            four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
+    elif not four:
+        CutebotPro.pwm_cruise_control(10, 0)
+        while one:
+            control.wait_micros(100)
+            one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
+            
+    CutebotPro.pwm_cruise_control(0, 0)
+
+    one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
+    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) > 200
+    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) > 200
+    four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
+
+    CutebotPro.pwm_cruise_control(10, 10)
+
+    while one and two and three and four:
+        control.wait_micros(100)
+        one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
+        two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) > 200
+        three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) > 200
+        four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
+
+    CutebotPro.pwm_cruise_control(0, 0)
+    one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
+    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) > 200
+    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) > 200
+    four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
+
+    if not one:
+        CutebotPro.pwm_cruise_control(0, 10)
+        while four:
+            control.wait_micros(100)
+            four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
+    elif not four:
+        CutebotPro.pwm_cruise_control(10, 0)
+        while one:
+            control.wait_micros(100)
+            one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
+
+    CutebotPro.pwm_cruise_control(0, 0)
+
+    CutebotPro.distance_running(CutebotProOrientation.ADVANCE, 17, CutebotProDistanceUnits.CM)
+
+
 
 # Broadcast the solution to another bot
 def broadcast_solution():
@@ -138,8 +192,6 @@ def broadcast_solution():
 def optimize():
     # Optimize by removing hanging areas
     global navigation
-    global hwalls_clear
-    global vwalls_clear
 
     optimized = navigation[:]
     
@@ -159,41 +211,14 @@ def optimize():
                 last_icoord -= 1
     
         cur_icoord += 1
-    
-    # Optimize by cutting through known clear areas
-    cur_icoord = 0
-    while cur_icoord < len(optimized) - 1:
-        last_icoord = len(optimized) - 1
-        while last_icoord > cur_icoord:
-            dx = optimized[cur_icoord][0] - optimized[last_icoord][0]
-            dy = optimized[cur_icoord][1] - optimized[last_icoord][1]
-
-            cut = False
-
-            if dx == 1:
-                cut = optimized[last_icoord] in vwalls_clear
-            elif dy == 1:
-                cut = optimized[last_icoord] in hwalls_clear
-            elif dx == -1:
-                cut = optimized[cur_icoord] in vwalls_clear
-            elif dy == -1:
-                cut = optimized[cur_icoord] in hwalls_clear
-            
-            if cut:
-                # deletes these coords from the new navigation
-                i = last_icoord
-                while i > cur_icoord:
-                    optimized.pop(i)
-                    i += -1
-                last_icoord = cur_icoord
-            else:
-                last_icoord -= 1
-            
-        cur_icoord += 1
 
     navigation = optimized
 
-
+def inside(goal: List[number], container: List[List[number]]):
+    for val in container:
+        if goal[0] == val[0] and goal[1] == val[1]:
+            return True
+    return False
 
 def get_surroundings():
     global x
@@ -202,10 +227,11 @@ def get_surroundings():
     global hwalls
     global vwalls
 
-    toward_0 = [x + 1, y] in vwalls
-    toward_1 = [x, y + 1] in hwalls
-    toward_2 = [x, y] in vwalls
-    toward_3 = [x, y] in hwalls
+    toward_0 = inside([x + 1, y], vwalls)
+    toward_1 = inside([x, y + 1], hwalls)
+    toward_2 = inside([x, y], vwalls)
+    toward_3 = inside([x, y], hwalls)
+
 
     if direction == 0:
         l = toward_1
@@ -229,6 +255,7 @@ def navigate_maze():
     # Go until the magnet is found, following the left wall
     while not magnet_found():
         obs_l, obs_r = get_surroundings() # Get the status of walls to the side for efficiency
+
         if left: # If we are following the left side of the line
             obs_forward = obstacle() # Check if there is an obstacle in front
             if not obs_l: # If there's no saved wall to the left
@@ -339,18 +366,16 @@ def navigate_back():
             turn_180()
         elif change_dir == 3 or change_dir == -1:
             turn_right()
-        basic.show_number(goal_direction)
-        basic.show_number(change_dir)
         if dx != 0 or dy != 0:
             forward()
 
 #celebration!!
-my_sprite = game.create_sprite(2, 2)
 rad = 0
 countdown = 3
 
 #sprite swirls out from center
 def swirlOut():
+    my_sprite = game.create_sprite(2, 2)
     global rad
     for i in range(5):
         for j in range(2):
@@ -362,9 +387,11 @@ def swirlOut():
     for x in range(rad-1):
         my_sprite.move(1)
         basic.pause(25)
+    my_sprite.delete()
 
 #sprite swirls back in to center
 def swirlIn():
+    my_sprite = game.create_sprite(0, 4)
     global rad
 
     my_sprite.turn(Direction.LEFT, 90)
@@ -375,6 +402,7 @@ def swirlIn():
                 basic.pause(20)
             my_sprite.turn(Direction.LEFT, 90)
         rad -= 1
+    my_sprite.delete()
 
 #repeats swirl "countdown" times and shows message
 def celly():
@@ -382,7 +410,6 @@ def celly():
         basic.show_number(countdown-i)
         swirlOut()
         swirlIn()
-    my_sprite.delete()
     basic.show_string("BOMB FOUND!")
     radio.send_string("BOMB FOUND!")
     #this is also where we would broadcast solution back to the first robot
@@ -395,9 +422,9 @@ def main():
         control.wait_micros(1000)
     basic.show_number(2)
     navigate_maze()
-    celly()
     basic.show_number(3)
     navigate_back()
+    celly()
     basic.show_number(4)
     
 

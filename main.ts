@@ -4,7 +4,7 @@ let straight_speed = 20
 //  Nominal speed of the robot
 let left = true
 //  Does the robot hug the left or right side of the line
-let turn = 93
+let turn = 92
 //  This number should represent a right turn
 //  when a button is pressed it changes the side the bot follows
 if (input.buttonIsPressed(Button.A)) {
@@ -26,11 +26,6 @@ let hwalls = [[0, 0]]
 let vwalls = [[0, 0]]
 _py.py_array_clear(hwalls)
 _py.py_array_clear(vwalls)
-//  Wall returning efficiency
-let hwalls_clear = [[0, 0]]
-let vwalls_clear = [[0, 0]]
-_py.py_array_clear(hwalls_clear)
-_py.py_array_clear(vwalls_clear)
 //  Setting block size and radio stuff
 CutebotPro.setBlockCnt(12, CutebotProDistanceUnits.Ft)
 radio.setGroup(1)
@@ -91,6 +86,7 @@ function turn_right() {
 
 function turn_left() {
     
+    CutebotPro.pwmCruiseControl(0, 0)
     CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, turn)
     direction = (direction + 1) % 4
 }
@@ -116,14 +112,6 @@ function obstacle() {
             hwalls.push([x, y])
         }
         
-    } else if (direction == 0) {
-        vwalls_clear.push([x + 1, y])
-    } else if (direction == 1) {
-        hwalls_clear.push([x, y + 1])
-    } else if (direction == 2) {
-        vwalls_clear.push([x, y])
-    } else {
-        hwalls_clear.push([x, y])
     }
     
     return obstacle_there
@@ -131,6 +119,7 @@ function obstacle() {
 
 //  Move forward, updating direction
 function forward() {
+    
     
     if (direction == 0) {
         x += 1
@@ -143,7 +132,71 @@ function forward() {
     }
     
     navigation.push([x, y])
-    CutebotPro.runBlockCnt(1)
+    let one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
+    let two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
+    let three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
+    let four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
+    CutebotPro.pwmCruiseControl(10, 10)
+    while (one && two && three && four) {
+        control.waitMicros(100)
+        one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
+        two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
+        three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
+        four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
+    }
+    CutebotPro.pwmCruiseControl(0, 0)
+    one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
+    two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
+    three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
+    four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
+    if (!one) {
+        CutebotPro.pwmCruiseControl(0, 10)
+        while (four) {
+            control.waitMicros(100)
+            four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
+        }
+    } else if (!four) {
+        CutebotPro.pwmCruiseControl(10, 0)
+        while (one) {
+            control.waitMicros(100)
+            one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
+        }
+    }
+    
+    CutebotPro.pwmCruiseControl(0, 0)
+    one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
+    two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) > 200
+    three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
+    four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
+    CutebotPro.pwmCruiseControl(10, 10)
+    while (one && two && three && four) {
+        control.waitMicros(100)
+        one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
+        two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) > 200
+        three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
+        four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
+    }
+    CutebotPro.pwmCruiseControl(0, 0)
+    one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
+    two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) > 200
+    three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
+    four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
+    if (!one) {
+        CutebotPro.pwmCruiseControl(0, 10)
+        while (four) {
+            control.waitMicros(100)
+            four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
+        }
+    } else if (!four) {
+        CutebotPro.pwmCruiseControl(10, 0)
+        while (one) {
+            control.waitMicros(100)
+            one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
+        }
+    }
+    
+    CutebotPro.pwmCruiseControl(0, 0)
+    CutebotPro.distanceRunning(CutebotProOrientation.Advance, 17, CutebotProDistanceUnits.Cm)
 }
 
 //  Broadcast the solution to another bot
@@ -156,12 +209,7 @@ function broadcast_solution() {
 function optimize() {
     let last_icoord: number;
     let i: number;
-    let dx: number;
-    let dy: number;
-    let cut: boolean;
     //  Optimize by removing hanging areas
-    
-    
     
     let optimized = navigation.slice(0)
     let cur_icoord = 0
@@ -184,55 +232,32 @@ function optimize() {
         }
         cur_icoord += 1
     }
-    //  Optimize by cutting through known clear areas
-    cur_icoord = 0
-    while (cur_icoord < optimized.length - 1) {
-        last_icoord = optimized.length - 1
-        while (last_icoord > cur_icoord) {
-            dx = optimized[cur_icoord][0] - optimized[last_icoord][0]
-            dy = optimized[cur_icoord][1] - optimized[last_icoord][1]
-            cut = false
-            if (dx == 1) {
-                cut = vwalls_clear.indexOf(optimized[last_icoord]) >= 0
-            } else if (dy == 1) {
-                cut = hwalls_clear.indexOf(optimized[last_icoord]) >= 0
-            } else if (dx == -1) {
-                cut = vwalls_clear.indexOf(optimized[cur_icoord]) >= 0
-            } else if (dy == -1) {
-                cut = hwalls_clear.indexOf(optimized[cur_icoord]) >= 0
-            }
-            
-            if (cut) {
-                //  deletes these coords from the new navigation
-                i = last_icoord
-                while (i > cur_icoord) {
-                    _py.py_array_pop(optimized, i)
-                    i += -1
-                }
-                last_icoord = cur_icoord
-            } else {
-                last_icoord -= 1
-            }
-            
-        }
-        cur_icoord += 1
-    }
     navigation = optimized
 }
 
-function get_surroundings(): any[] {
-    let l: any;
-    let f: any;
-    let r: any;
+function inside(goal: number[], container: number[][]): boolean {
+    for (let val of container) {
+        if (goal[0] == val[0] && goal[1] == val[1]) {
+            return true
+        }
+        
+    }
+    return false
+}
+
+function get_surroundings(): boolean[] {
+    let l: boolean;
+    let f: boolean;
+    let r: boolean;
     
     
     
     
     
-    let toward_0 = vwalls.indexOf([x + 1, y]) >= 0
-    let toward_1 = hwalls.indexOf([x, y + 1]) >= 0
-    let toward_2 = vwalls.indexOf([x, y]) >= 0
-    let toward_3 = hwalls.indexOf([x, y]) >= 0
+    let toward_0 = inside([x + 1, y], vwalls)
+    let toward_1 = inside([x, y + 1], hwalls)
+    let toward_2 = inside([x, y], vwalls)
+    let toward_3 = inside([x, y], hwalls)
     if (direction == 0) {
         l = toward_1
         f = toward_0
@@ -398,8 +423,6 @@ function navigate_back() {
             turn_right()
         }
         
-        basic.showNumber(goal_direction)
-        basic.showNumber(change_dir)
         if (dx != 0 || dy != 0) {
             forward()
         }
@@ -408,12 +431,12 @@ function navigate_back() {
 }
 
 // celebration!!
-let my_sprite = game.createSprite(2, 2)
 let rad = 0
 let countdown = 3
 // sprite swirls out from center
 function swirlOut() {
     let x: number;
+    let my_sprite = game.createSprite(2, 2)
     
     for (let i = 0; i < 5; i++) {
         for (let j = 0; j < 2; j++) {
@@ -429,10 +452,12 @@ function swirlOut() {
         my_sprite.move(1)
         basic.pause(25)
     }
+    my_sprite.delete()
 }
 
 // sprite swirls back in to center
 function swirlIn() {
+    let my_sprite = game.createSprite(0, 4)
     
     my_sprite.turn(Direction.Left, 90)
     for (let i = 0; i < 5; i++) {
@@ -445,6 +470,7 @@ function swirlIn() {
         }
         rad -= 1
     }
+    my_sprite.delete()
 }
 
 // repeats swirl "countdown" times and shows message
@@ -454,7 +480,6 @@ function celly() {
         swirlOut()
         swirlIn()
     }
-    my_sprite.delete()
     basic.showString("BOMB FOUND!")
     radio.sendString("BOMB FOUND!")
 }
@@ -468,9 +493,9 @@ function main() {
     }
     basic.showNumber(2)
     navigate_maze()
-    celly()
     basic.showNumber(3)
     navigate_back()
+    celly()
     basic.showNumber(4)
 }
 
