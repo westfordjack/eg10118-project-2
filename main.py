@@ -19,7 +19,7 @@ y = navigation[0][1]
 
 # Setting block size and radio stuff
 CutebotPro.set_block_cnt(12, CutebotProDistanceUnits.FT)
-radio.set_group(1)
+radio.set_group(7)
 
 # Magnetic baseline and threshold
 baseline = abs(input.magnetic_force(Dimension.Y))
@@ -98,6 +98,9 @@ def forward():
 # Broadcast the solution to another bot
 def broadcast_solution():
     pass
+    '''
+    radio.send_value("newCoor", optimizedCoordinates)
+    '''
 
 # Navigate the maze
 def navigate_maze():
