@@ -344,7 +344,50 @@ def navigate_back():
         if dx != 0 or dy != 0:
             forward()
 
-    
+#celebration!!
+my_sprite = game.create_sprite(2, 2)
+rad = 0
+countdown = 3
+
+#sprite swirls out from center
+def swirlOut():
+    global rad
+    for i in range(5):
+        for j in range(2):
+            for x in range(rad):
+                my_sprite.move(1)
+                basic.pause(20)
+            my_sprite.turn(Direction.RIGHT, 90)
+        rad = rad+1
+    for x in range(rad-1):
+        my_sprite.move(1)
+        basic.pause(25)
+
+#sprite swirls back in to center
+def swirlIn():
+    global rad
+
+    my_sprite.turn(Direction.LEFT, 90)
+    for i in range(5):
+        for j in range(2):
+            for x in range(rad):
+                my_sprite.move(1)
+                basic.pause(20)
+            my_sprite.turn(Direction.LEFT, 90)
+        rad -= 1
+
+#repeats swirl "countdown" times and shows message
+def celly():
+    for i in range(countdown):
+        basic.show_number(countdown-i)
+        swirlOut()
+        swirlIn()
+    my_sprite.delete()
+    basic.show_string("BOMB FOUND!")
+    radio.send_string("BOMB FOUND!")
+    #this is also where we would broadcast solution back to the first robot
+
+
 def main():
     basic.show_number(1)
     while not magnet_found():
@@ -352,8 +395,10 @@ def main():
         control.wait_micros(1000)
     basic.show_number(2)
     navigate_maze()
+    celly()
     basic.show_number(3)
     navigate_back()
     basic.show_number(4)
+    
 
 main()

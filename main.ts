@@ -407,6 +407,59 @@ function navigate_back() {
     }
 }
 
+// celebration!!
+let my_sprite = game.createSprite(2, 2)
+let rad = 0
+let countdown = 3
+// sprite swirls out from center
+function swirlOut() {
+    let x: number;
+    
+    for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 2; j++) {
+            for (x = 0; x < rad; x++) {
+                my_sprite.move(1)
+                basic.pause(20)
+            }
+            my_sprite.turn(Direction.Right, 90)
+        }
+        rad = rad + 1
+    }
+    for (x = 0; x < rad - 1; x++) {
+        my_sprite.move(1)
+        basic.pause(25)
+    }
+}
+
+// sprite swirls back in to center
+function swirlIn() {
+    
+    my_sprite.turn(Direction.Left, 90)
+    for (let i = 0; i < 5; i++) {
+        for (let j = 0; j < 2; j++) {
+            for (let x = 0; x < rad; x++) {
+                my_sprite.move(1)
+                basic.pause(20)
+            }
+            my_sprite.turn(Direction.Left, 90)
+        }
+        rad -= 1
+    }
+}
+
+// repeats swirl "countdown" times and shows message
+function celly() {
+    for (let i = 0; i < countdown; i++) {
+        basic.showNumber(countdown - i)
+        swirlOut()
+        swirlIn()
+    }
+    my_sprite.delete()
+    basic.showString("BOMB FOUND!")
+    radio.sendString("BOMB FOUND!")
+}
+
+// this is also where we would broadcast solution back to the first robot
 function main() {
     basic.showNumber(1)
     while (!magnet_found()) {
@@ -415,6 +468,7 @@ function main() {
     }
     basic.showNumber(2)
     navigate_maze()
+    celly()
     basic.showNumber(3)
     navigate_back()
     basic.showNumber(4)
