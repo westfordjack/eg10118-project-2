@@ -1,5 +1,6 @@
 //  EG10118 Section 12 Project 2 Program: Bomb Sniffing Robot
 //  Nathan Burke, Edan Czarobski, Ben Muckian, Jack Whitman
+radio.setGroup(7)
 let straight_speed = 20
 //  Nominal speed of the robot
 let left = true
@@ -28,7 +29,6 @@ _py.py_array_clear(hwalls)
 _py.py_array_clear(vwalls)
 //  Setting block size and radio stuff
 CutebotPro.setBlockCnt(12, CutebotProDistanceUnits.Ft)
-radio.setGroup(1)
 //  Magnetic baseline and threshold
 let baseline = Math.abs(input.magneticForce(Dimension.Z))
 let magnetic_threshold = 100
@@ -201,10 +201,26 @@ function forward() {
 
 //  Broadcast the solution to another bot
 function broadcast_solution() {
+    let dx: number;
+    let dy: number;
     
+    let instructions = ""
+    for (let i = 1; i < navigation.length; i++) {
+        dx = navigation[i][0] - navigation[i - 1][0]
+        dy = navigation[i][1] - navigation[i - 1][1]
+        if (dx == 1) {
+            radio.sendNumber(0)
+        } else if (dx == -1) {
+            radio.sendNumber(2)
+        } else if (dy == 1) {
+            radio.sendNumber(1)
+        } else {
+            radio.sendNumber(3)
+        }
+        
+    }
 }
 
-//  Should probably convert this into directions (up, down, left, right) and send to the screen of the other bot
 //  Optimize return solution
 function optimize() {
     let last_icoord: number;
@@ -276,117 +292,124 @@ function get_surroundings(): boolean[] {
     return [l, r]
 }
 
-//  Navigate the maze
-function navigate_maze() {
+function move_block() {
     let obs_forward: any;
-    //  Go until the magnet is found, following the left wall
-    while (!magnet_found()) {
-        let [obs_l, obs_r] = get_surroundings()
-        //  Get the status of walls to the side for efficiency
-        if (left) {
-            //  If we are following the left side of the line
-            obs_forward = obstacle()
-            //  Check if there is an obstacle in front
-            if (!obs_l) {
-                //  If there's no saved wall to the left
-                //  Turn left--if no obstacle, go forward
-                turn_left()
-                if (!obstacle()) {
-                    forward()
-                } else if (!obs_forward) {
-                    //  Otherwise, if no obstacle was in front, turn back and go
-                    turn_right()
-                    forward()
-                } else if (!obs_r) {
-                    //  Otherwise, if there's no saved wall to the right, turn around and check
-                    turn_180()
-                    //  If there's no obstacle, go
-                    if (!obstacle()) {
-                        forward()
-                    } else {
-                        //  Otherwise, turn around and go back
-                        turn_right()
-                        forward()
-                    }
-                    
-                } else {
-                    //  If there was a saved wall to the right, turn back
-                    turn_left()
-                    forward()
-                }
-                
+    let [obs_l, obs_r] = get_surroundings()
+    //  Get the status of walls to the side for efficiency
+    if (left) {
+        //  If we are following the left side of the line
+        obs_forward = obstacle()
+        //  Check if there is an obstacle in front
+        if (!obs_l) {
+            //  If there's no saved wall to the left
+            //  Turn left--if no obstacle, go forward
+            turn_left()
+            if (!obstacle()) {
+                forward()
             } else if (!obs_forward) {
+                //  Otherwise, if no obstacle was in front, turn back and go
+                turn_right()
                 forward()
             } else if (!obs_r) {
-                //  Otherwise, if there's no saved wall to the right, go check
-                turn_right()
-                //  If no obstacle, go; otherwise, turn back
+                //  Otherwise, if there's no saved wall to the right, turn around and check
+                turn_180()
+                //  If there's no obstacle, go
                 if (!obstacle()) {
                     forward()
                 } else {
+                    //  Otherwise, turn around and go back
                     turn_right()
                     forward()
                 }
                 
             } else {
                 //  If there was a saved wall to the right, turn back
-                turn_180()
+                turn_left()
+                forward()
+            }
+            
+        } else if (!obs_forward) {
+            forward()
+        } else if (!obs_r) {
+            //  Otherwise, if there's no saved wall to the right, go check
+            turn_right()
+            //  If no obstacle, go; otherwise, turn back
+            if (!obstacle()) {
+                forward()
+            } else {
+                turn_right()
                 forward()
             }
             
         } else {
-            //  If we're following the right wall
-            obs_forward = obstacle()
-            //  Check if there is an obstacle in front
-            if (!obs_r) {
-                //  If there's no saved wall to the right
-                //  Turn right--if no obstacle, go forward
-                turn_right()
-                if (!obstacle()) {
-                    forward()
-                } else if (!obs_forward) {
-                    //  Otherwise, if no obstacle was in front, turn back and go
-                    turn_left()
-                    forward()
-                } else if (!obs_l) {
-                    //  Otherwise, if there's no saved wall to the left, turn around and check
-                    turn_180()
-                    //  If there's no obstacle, go
-                    if (!obstacle()) {
-                        forward()
-                    } else {
-                        //  Otherwise, turn around and go back
-                        turn_left()
-                        forward()
-                    }
-                    
-                } else {
-                    //  If there was a saved wall to the right, turn back
-                    turn_right()
-                    forward()
-                }
-                
+            //  If there was a saved wall to the right, turn back
+            turn_180()
+            forward()
+        }
+        
+    } else {
+        //  If we're following the right wall
+        obs_forward = obstacle()
+        //  Check if there is an obstacle in front
+        if (!obs_r) {
+            //  If there's no saved wall to the right
+            //  Turn right--if no obstacle, go forward
+            turn_right()
+            if (!obstacle()) {
+                forward()
             } else if (!obs_forward) {
+                //  Otherwise, if no obstacle was in front, turn back and go
+                turn_left()
                 forward()
             } else if (!obs_l) {
-                //  Otherwise, if there's no saved wall to the left, go check
-                turn_left()
-                //  If no obstacle, go; otherwise, turn back
+                //  Otherwise, if there's no saved wall to the left, turn around and check
+                turn_180()
+                //  If there's no obstacle, go
                 if (!obstacle()) {
                     forward()
                 } else {
+                    //  Otherwise, turn around and go back
                     turn_left()
                     forward()
                 }
                 
             } else {
-                //  If there was a saved wall to the left, turn back
-                turn_180()
+                //  If there was a saved wall to the right, turn back
+                turn_right()
                 forward()
             }
             
+        } else if (!obs_forward) {
+            forward()
+        } else if (!obs_l) {
+            //  Otherwise, if there's no saved wall to the left, go check
+            turn_left()
+            //  If no obstacle, go; otherwise, turn back
+            if (!obstacle()) {
+                forward()
+            } else {
+                turn_left()
+                forward()
+            }
+            
+        } else {
+            //  If there was a saved wall to the left, turn back
+            turn_180()
+            forward()
         }
         
+    }
+    
+}
+
+//  Navigate the maze
+function navigate_maze() {
+    //  Go until the magnet is found, following the left wall
+    for (let i = 0; i < 2; i++) {
+        move_block()
+    }
+    while (!magnet_found()) {
+        move_block()
     }
 }
 
@@ -399,6 +422,7 @@ function navigate_back() {
     let change_dir: number;
     optimize()
     //  Optimized navigation path
+    broadcast_solution()
     let num_steps = navigation.length
     for (let step_num = 2; step_num < num_steps + 1; step_num++) {
         next_step = navigation[num_steps - step_num]
@@ -486,11 +510,14 @@ function celly() {
 
 // this is also where we would broadcast solution back to the first robot
 function main() {
+    radio.setGroup(7)
+    radio.sendString("L")
     basic.showNumber(1)
     while (!magnet_found()) {
         follow_line()
         control.waitMicros(1000)
     }
+    radio.sendString("M")
     basic.showNumber(2)
     navigate_maze()
     basic.showNumber(3)

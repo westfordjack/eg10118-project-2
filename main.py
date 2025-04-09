@@ -1,5 +1,6 @@
 # EG10118 Section 12 Project 2 Program: Bomb Sniffing Robot
 # Nathan Burke, Edan Czarobski, Ben Muckian, Jack Whitman
+radio.set_group(7)
 
 straight_speed = 20 # Nominal speed of the robot
 left = True # Does the robot hug the left or right side of the line
@@ -25,7 +26,6 @@ vwalls.clear()
 
 # Setting block size and radio stuff
 CutebotPro.set_block_cnt(12, CutebotProDistanceUnits.FT)
-radio.set_group(1)
 
 # Magnetic baseline and threshold
 baseline = abs(input.magnetic_force(Dimension.Z))
@@ -186,7 +186,20 @@ def forward():
 # Broadcast the solution to another bot
 def broadcast_solution():
     global navigation
-    # Should probably convert this into directions (up, down, left, right) and send to the screen of the other bot
+    instructions = ''
+    for i in range(1, len(navigation)):
+        dx = navigation[i][0] - navigation[i - 1][0]
+        dy = navigation[i][1] - navigation[i - 1][1]
+
+        if (dx == 1):
+            radio.send_number(0)
+        elif (dx == -1):
+            radio.send_number(2)
+        elif (dy == 1):
+            radio.send_number(1)
+        else:
+            radio.send_number(3)
+
 
 # Optimize return solution
 def optimize():
@@ -249,103 +262,108 @@ def get_surroundings():
 
     return l, r
 
+def move_block():
+    obs_l, obs_r = get_surroundings() # Get the status of walls to the side for efficiency
+    if left: # If we are following the left side of the line
+        obs_forward = obstacle() # Check if there is an obstacle in front
+        if not obs_l: # If there's no saved wall to the left
+            # Turn left--if no obstacle, go forward
+            turn_left()
+            if not obstacle():
+                forward()
+            # Otherwise, if no obstacle was in front, turn back and go
+            elif not obs_forward:
+                turn_right()
+                forward()
+            # Otherwise, if there's no saved wall to the right, turn around and check
+            elif not obs_r:
+                turn_180()
+                # If there's no obstacle, go
+                if not obstacle():
+                    forward()
+                # Otherwise, turn around and go back
+                else:
+                    turn_right()
+                    forward()
+            # If there was a saved wall to the right, turn back
+            else:
+                turn_left()
+                forward()
+        else:
+            # If there was a saved wall to the left, go forward if possible
+            if not obs_forward:
+                forward()
+            # Otherwise, if there's no saved wall to the right, go check
+            elif not obs_r:
+                turn_right()
+                # If no obstacle, go; otherwise, turn back
+                if not obstacle():
+                    forward()
+                else:
+                    turn_right()
+                    forward()
+            # If there was a saved wall to the right, turn back
+            else:
+                turn_180()
+                forward()
+        
+    else: # If we're following the right wall
+        obs_forward = obstacle() # Check if there is an obstacle in front
+        if not obs_r: # If there's no saved wall to the right
+            # Turn right--if no obstacle, go forward
+            turn_right()
+            if not obstacle():
+                forward()
+            # Otherwise, if no obstacle was in front, turn back and go
+            elif not obs_forward:
+                turn_left()
+                forward()
+            # Otherwise, if there's no saved wall to the left, turn around and check
+            elif not obs_l:
+                turn_180()
+                # If there's no obstacle, go
+                if not obstacle():
+                    forward()
+                # Otherwise, turn around and go back
+                else:
+                    turn_left()
+                    forward()
+            # If there was a saved wall to the right, turn back
+            else:
+                turn_right()
+                forward()
+        else:
+            # If there was a saved wall to the right, go forward if possible
+            if not obs_forward:
+                forward()
+            # Otherwise, if there's no saved wall to the left, go check
+            elif not obs_l:
+                turn_left()
+                # If no obstacle, go; otherwise, turn back
+                if not obstacle():
+                    forward()
+                else:
+                    turn_left()
+                    forward()
+            # If there was a saved wall to the left, turn back
+            else:
+                turn_180()
+                forward()
 
 # Navigate the maze
 def navigate_maze():
     # Go until the magnet is found, following the left wall
+    for i in range(2):
+        move_block()
     while not magnet_found():
-        obs_l, obs_r = get_surroundings() # Get the status of walls to the side for efficiency
-
-        if left: # If we are following the left side of the line
-            obs_forward = obstacle() # Check if there is an obstacle in front
-            if not obs_l: # If there's no saved wall to the left
-                # Turn left--if no obstacle, go forward
-                turn_left()
-                if not obstacle():
-                    forward()
-                # Otherwise, if no obstacle was in front, turn back and go
-                elif not obs_forward:
-                    turn_right()
-                    forward()
-                # Otherwise, if there's no saved wall to the right, turn around and check
-                elif not obs_r:
-                    turn_180()
-                    # If there's no obstacle, go
-                    if not obstacle():
-                        forward()
-                    # Otherwise, turn around and go back
-                    else:
-                        turn_right()
-                        forward()
-                # If there was a saved wall to the right, turn back
-                else:
-                    turn_left()
-                    forward()
-            else:
-                # If there was a saved wall to the left, go forward if possible
-                if not obs_forward:
-                    forward()
-                # Otherwise, if there's no saved wall to the right, go check
-                elif not obs_r:
-                    turn_right()
-                    # If no obstacle, go; otherwise, turn back
-                    if not obstacle():
-                        forward()
-                    else:
-                        turn_right()
-                        forward()
-                # If there was a saved wall to the right, turn back
-                else:
-                    turn_180()
-                    forward()
-            
-        else: # If we're following the right wall
-            obs_forward = obstacle() # Check if there is an obstacle in front
-            if not obs_r: # If there's no saved wall to the right
-                # Turn right--if no obstacle, go forward
-                turn_right()
-                if not obstacle():
-                    forward()
-                # Otherwise, if no obstacle was in front, turn back and go
-                elif not obs_forward:
-                    turn_left()
-                    forward()
-                # Otherwise, if there's no saved wall to the left, turn around and check
-                elif not obs_l:
-                    turn_180()
-                    # If there's no obstacle, go
-                    if not obstacle():
-                        forward()
-                    # Otherwise, turn around and go back
-                    else:
-                        turn_left()
-                        forward()
-                # If there was a saved wall to the right, turn back
-                else:
-                    turn_right()
-                    forward()
-            else:
-                # If there was a saved wall to the right, go forward if possible
-                if not obs_forward:
-                    forward()
-                # Otherwise, if there's no saved wall to the left, go check
-                elif not obs_l:
-                    turn_left()
-                    # If no obstacle, go; otherwise, turn back
-                    if not obstacle():
-                        forward()
-                    else:
-                        turn_left()
-                        forward()
-                # If there was a saved wall to the left, turn back
-                else:
-                    turn_180()
-                    forward()
+        move_block()
+        
 
 # Head back to the start
 def navigate_back():
     optimize()
     # Optimized navigation path
+    broadcast_solution()
     num_steps = len(navigation)
     for step_num in range(2, num_steps + 1):
         next_step = navigation[num_steps - step_num]
@@ -415,11 +433,15 @@ def celly():
     #this is also where we would broadcast solution back to the first robot
 
 
+
 def main():
+    radio.set_group(7)
+    radio.send_string("L")
     basic.show_number(1)
     while not magnet_found():
         follow_line()
         control.wait_micros(1000)
+    radio.send_string("M")
     basic.show_number(2)
     navigate_maze()
     basic.show_number(3)
