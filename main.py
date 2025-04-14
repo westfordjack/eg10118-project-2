@@ -2,6 +2,7 @@
 # Nathan Burke, Edan Czarobski, Ben Muckian, Jack Whitman
 radio.set_group(7)
 
+adjust_speed = 12
 straight_speed = 20 # Nominal speed of the robot
 left = True # Does the robot hug the left or right side of the line
 turn = 92 # This number should represent a right turn
@@ -21,11 +22,8 @@ y = navigation[0][1]
 # Wall finding efficiency
 hwalls = [[0, 0]]
 vwalls = [[0, 0]]
-hwalls.clear()
+hwalls.clear() # Clear to avoid TypeScript type errors
 vwalls.clear()
-
-# Setting block size and radio stuff
-CutebotPro.set_block_cnt(12, CutebotProDistanceUnits.FT)
 
 # Magnetic baseline and threshold
 baseline = abs(input.magnetic_force(Dimension.Z))
@@ -38,7 +36,8 @@ def magnet_found():
 # Set the robot to go tangent to the current edge of the line
 def follow_line():
     global straight_speed
-    # Get distance from line (+3000 to -3000)
+
+    # Get offset from line (+3000 to -3000)
     offset = CutebotPro.get_offset()
 
     # If we want to follow the left side of the line, center ourselves at offset 1500
@@ -67,20 +66,27 @@ def follow_line():
 # Turning functions
 def turn_right():
     global direction
+    # Turn right
+    CutebotPro.pwm_cruise_control(0, 0)
     CutebotPro.trolley_steering(CutebotProTurn.RIGHT_IN_PLACE, turn)
+    # Update direction, make sure rollover is ok
     direction = direction - 1
     if direction < 0:
         direction += 4
     
 def turn_left():
     global direction
+    # Turn left
     CutebotPro.pwm_cruise_control(0, 0)
     CutebotPro.trolley_steering(CutebotProTurn.LEFT_IN_PLACE, turn)
+    # Update direction, make sure rollover is ok
     direction = (direction + 1) % 4
 
 def turn_180():
     global direction
+    # Turn 180 degrees in place
     CutebotPro.trolley_steering(CutebotProTurn.LEFT_IN_PLACE, turn * 2)
+    # Update directrion
     direction = (direction + 2) % 4
 
 # Checks for an obstacle
@@ -96,13 +102,15 @@ def obstacle():
             vwalls.append([x, y])
         else:
             hwalls.append([x, y])
-    
+    # Return whether or not an obstacle was found
     return obstacle_there
 
 # Move forward, updating direction
 def forward():
     global x, y
     global straight_speed
+
+    # Update position coordinates
     if direction == 0:
         x += 1
     elif direction == 1:
@@ -111,15 +119,18 @@ def forward():
         x -= 1
     else:
         y -= 1
+
+    # Add new position to the list of seen points
     navigation.append([x, y])
     
+    # Record whether or not each sensor sees white
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
     two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
     three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
-    CutebotPro.pwm_cruise_control(10, 10)
-
+    # Drive forward until we see the tape
+    CutebotPro.pwm_cruise_control(adjust_speed, adjust_speed)
     while one and two and three and four:
         control.wait_micros(100)
         one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
@@ -127,23 +138,28 @@ def forward():
         three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
         four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
+    # Stop on the tape
     CutebotPro.pwm_cruise_control(0, 0)
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
     two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
     three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
+    # Turn right if only the left sensor sees the tape
     if not one:
-        CutebotPro.pwm_cruise_control(0, 10)
+        CutebotPro.pwm_cruise_control(0, adjust_speed)
         while four:
             control.wait_micros(100)
             four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
+
+    # Turn left if only the right sensor sees the tape
     elif not four:
-        CutebotPro.pwm_cruise_control(10, 0)
+        CutebotPro.pwm_cruise_control(adjust_speed, 0)
         while one:
             control.wait_micros(100)
             one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
-            
+
+    ## Repeat the same process, but for leaving the tape
     CutebotPro.pwm_cruise_control(0, 0)
 
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
@@ -151,7 +167,7 @@ def forward():
     three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) > 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
 
-    CutebotPro.pwm_cruise_control(10, 10)
+    CutebotPro.pwm_cruise_control(adjust_speed, adjust_speed)
 
     while one and two and three and four:
         control.wait_micros(100)
@@ -167,18 +183,19 @@ def forward():
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
 
     if not one:
-        CutebotPro.pwm_cruise_control(0, 10)
+        CutebotPro.pwm_cruise_control(0, adjust_speed)
         while four:
             control.wait_micros(100)
             four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
     elif not four:
-        CutebotPro.pwm_cruise_control(10, 0)
+        CutebotPro.pwm_cruise_control(adjust_speed, 0)
         while one:
             control.wait_micros(100)
             one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
 
     CutebotPro.pwm_cruise_control(0, 0)
 
+    # Advance forward to the center of the current square
     CutebotPro.distance_running(CutebotProOrientation.ADVANCE, 17, CutebotProDistanceUnits.CM)
 
 
@@ -186,11 +203,12 @@ def forward():
 # Broadcast the solution to another bot
 def broadcast_solution():
     global navigation
-    instructions = ''
+    # For each direction traveled
     for i in range(1, len(navigation)):
+        # Find change in x or y
         dx = navigation[i][0] - navigation[i - 1][0]
         dy = navigation[i][1] - navigation[i - 1][1]
-
+        # Send corresponding direction of the move represented by the dx/dy
         if (dx == 1):
             radio.send_number(0)
         elif (dx == -1):
@@ -206,15 +224,18 @@ def optimize():
     # Optimize by removing hanging areas
     global navigation
 
+    # Create a copy of navigation
     optimized = navigation[:]
     
+    # Loop through navigation
     cur_icoord = 0
     while cur_icoord < len(optimized) - 1:
         last_icoord = len(optimized) - 1
+        # Loop through all spots ahead of this one
         while last_icoord > cur_icoord:
-            # if the vector sum is [0, 0]
+            # if the spots are the same
             if optimized[cur_icoord][0] == optimized[last_icoord][0] and optimized[cur_icoord][1] == optimized[last_icoord][1]:
-                # deletes these coords from the new navigation
+                # Delete all moves in between
                 i = last_icoord
                 while i > cur_icoord:
                     optimized.pop(i)
@@ -225,14 +246,20 @@ def optimize():
     
         cur_icoord += 1
 
+    # Set navigation list to this optimized one
     navigation = optimized
 
-def inside(goal: List[number], container: List[List[number]]):
+# Checks if a 2d value is in a list
+def inside(goal: List[number], container: List[List[number]]): # Type declarations are needed because this is actually typescript in a python-shaped costume
+    # Loop through list
     for val in container:
+        # If found, return true
         if goal[0] == val[0] and goal[1] == val[1]:
             return True
+    # Not found; return false
     return False
 
+# Get the
 def get_surroundings():
     global x
     global y

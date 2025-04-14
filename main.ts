@@ -1,6 +1,7 @@
 //  EG10118 Section 12 Project 2 Program: Bomb Sniffing Robot
 //  Nathan Burke, Edan Czarobski, Ben Muckian, Jack Whitman
 radio.setGroup(7)
+let adjust_speed = 12
 let straight_speed = 20
 //  Nominal speed of the robot
 let left = true
@@ -26,9 +27,8 @@ let y = navigation[0][1]
 let hwalls = [[0, 0]]
 let vwalls = [[0, 0]]
 _py.py_array_clear(hwalls)
+//  Clear to avoid TypeScript type errors
 _py.py_array_clear(vwalls)
-//  Setting block size and radio stuff
-CutebotPro.setBlockCnt(12, CutebotProDistanceUnits.Ft)
 //  Magnetic baseline and threshold
 let baseline = Math.abs(input.magneticForce(Dimension.Z))
 let magnetic_threshold = 100
@@ -43,7 +43,7 @@ function follow_line() {
     let difference: number;
     let turn_speed: number;
     
-    //  Get distance from line (+3000 to -3000)
+    //  Get offset from line (+3000 to -3000)
     let offset = CutebotPro.getOffset()
     //  If we want to follow the left side of the line, center ourselves at offset 1500
     if (left) {
@@ -76,7 +76,10 @@ function follow_line() {
 //  Turning functions
 function turn_right() {
     
+    //  Turn right
+    CutebotPro.pwmCruiseControl(0, 0)
     CutebotPro.trolleySteering(CutebotProTurn.RightInPlace, turn)
+    //  Update direction, make sure rollover is ok
     direction = direction - 1
     if (direction < 0) {
         direction += 4
@@ -86,14 +89,18 @@ function turn_right() {
 
 function turn_left() {
     
+    //  Turn left
     CutebotPro.pwmCruiseControl(0, 0)
     CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, turn)
+    //  Update direction, make sure rollover is ok
     direction = (direction + 1) % 4
 }
 
 function turn_180() {
     
+    //  Turn 180 degrees in place
     CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, turn * 2)
+    //  Update directrion
     direction = (direction + 2) % 4
 }
 
@@ -114,6 +121,7 @@ function obstacle() {
         
     }
     
+    //  Return whether or not an obstacle was found
     return obstacle_there
 }
 
@@ -121,6 +129,7 @@ function obstacle() {
 function forward() {
     
     
+    //  Update position coordinates
     if (direction == 0) {
         x += 1
     } else if (direction == 1) {
@@ -131,12 +140,15 @@ function forward() {
         y -= 1
     }
     
+    //  Add new position to the list of seen points
     navigation.push([x, y])
+    //  Record whether or not each sensor sees white
     let one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
     let two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
     let three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
     let four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
-    CutebotPro.pwmCruiseControl(10, 10)
+    //  Drive forward until we see the tape
+    CutebotPro.pwmCruiseControl(adjust_speed, adjust_speed)
     while (one && two && three && four) {
         control.waitMicros(100)
         one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
@@ -144,31 +156,35 @@ function forward() {
         three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
         four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
     }
+    //  Stop on the tape
     CutebotPro.pwmCruiseControl(0, 0)
     one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
     two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
     three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
     four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
+    //  Turn right if only the left sensor sees the tape
     if (!one) {
-        CutebotPro.pwmCruiseControl(0, 10)
+        CutebotPro.pwmCruiseControl(0, adjust_speed)
         while (four) {
             control.waitMicros(100)
             four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
         }
     } else if (!four) {
-        CutebotPro.pwmCruiseControl(10, 0)
+        //  Turn left if only the right sensor sees the tape
+        CutebotPro.pwmCruiseControl(adjust_speed, 0)
         while (one) {
             control.waitMicros(100)
             one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
         }
     }
     
+    // # Repeat the same process, but for leaving the tape
     CutebotPro.pwmCruiseControl(0, 0)
     one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
     two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) > 200
     three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
     four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
-    CutebotPro.pwmCruiseControl(10, 10)
+    CutebotPro.pwmCruiseControl(adjust_speed, adjust_speed)
     while (one && two && three && four) {
         control.waitMicros(100)
         one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
@@ -182,13 +198,13 @@ function forward() {
     three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
     four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
     if (!one) {
-        CutebotPro.pwmCruiseControl(0, 10)
+        CutebotPro.pwmCruiseControl(0, adjust_speed)
         while (four) {
             control.waitMicros(100)
             four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
         }
     } else if (!four) {
-        CutebotPro.pwmCruiseControl(10, 0)
+        CutebotPro.pwmCruiseControl(adjust_speed, 0)
         while (one) {
             control.waitMicros(100)
             one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
@@ -196,6 +212,7 @@ function forward() {
     }
     
     CutebotPro.pwmCruiseControl(0, 0)
+    //  Advance forward to the center of the current square
     CutebotPro.distanceRunning(CutebotProOrientation.Advance, 17, CutebotProDistanceUnits.Cm)
 }
 
@@ -204,10 +221,12 @@ function broadcast_solution() {
     let dx: number;
     let dy: number;
     
-    let instructions = ""
+    //  For each direction traveled
     for (let i = 1; i < navigation.length; i++) {
+        //  Find change in x or y
         dx = navigation[i][0] - navigation[i - 1][0]
         dy = navigation[i][1] - navigation[i - 1][1]
+        //  Send corresponding direction of the move represented by the dx/dy
         if (dx == 1) {
             radio.sendNumber(0)
         } else if (dx == -1) {
@@ -227,14 +246,17 @@ function optimize() {
     let i: number;
     //  Optimize by removing hanging areas
     
+    //  Create a copy of navigation
     let optimized = navigation.slice(0)
+    //  Loop through navigation
     let cur_icoord = 0
     while (cur_icoord < optimized.length - 1) {
         last_icoord = optimized.length - 1
+        //  Loop through all spots ahead of this one
         while (last_icoord > cur_icoord) {
-            //  if the vector sum is [0, 0]
+            //  if the spots are the same
             if (optimized[cur_icoord][0] == optimized[last_icoord][0] && optimized[cur_icoord][1] == optimized[last_icoord][1]) {
-                //  deletes these coords from the new navigation
+                //  Delete all moves in between
                 i = last_icoord
                 while (i > cur_icoord) {
                     _py.py_array_pop(optimized, i)
@@ -248,19 +270,26 @@ function optimize() {
         }
         cur_icoord += 1
     }
+    //  Set navigation list to this optimized one
     navigation = optimized
 }
 
+//  Checks if a 2d value is in a list
 function inside(goal: number[], container: number[][]): boolean {
+    //  Type declarations are needed because this is actually typescript in a python-shaped costume
+    //  Loop through list
     for (let val of container) {
+        //  If found, return true
         if (goal[0] == val[0] && goal[1] == val[1]) {
             return true
         }
         
     }
+    //  Not found; return false
     return false
 }
 
+//  Get the
 function get_surroundings(): boolean[] {
     let l: boolean;
     let f: boolean;
