@@ -505,23 +505,23 @@ function celly() {
         swirlIn()
     }
     basic.showString("BOMB FOUND!")
-    radio.sendString("BOMB FOUND!")
 }
 
 function main() {
     radio.setGroup(7)
     radio.sendString("L")
     basic.showNumber(1)
-    while (!magnet_found()) {
+    while (!magnet_found() || !CutebotPro.getGrayscaleSensorState(TrackbitStateType.Tracking_State_0)) {
         follow_line()
         control.waitMicros(1000)
     }
+    CutebotPro.distanceRunning(CutebotProOrientation.Advance, 17, CutebotProDistanceUnits.Cm)
     radio.sendString("M")
     basic.showNumber(2)
     navigate_maze()
+    celly()
     basic.showNumber(3)
     navigate_back()
-    celly()
     basic.showNumber(4)
 }
 

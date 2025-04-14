@@ -429,22 +429,23 @@ def celly():
         swirlOut()
         swirlIn()
     basic.show_string("BOMB FOUND!")
-    radio.send_string("BOMB FOUND!")
 
 def main():
     radio.set_group(7)
     radio.send_string("L")
     basic.show_number(1)
-    while not magnet_found():
+    while (not magnet_found()) or (not CutebotPro.get_grayscale_sensor_state(TrackbitStateType.TRACKING_STATE_0)):
         follow_line()
         control.wait_micros(1000)
+    CutebotPro.distance_running(CutebotProOrientation.ADVANCE, 17, CutebotProDistanceUnits.CM)
     radio.send_string("M")
     basic.show_number(2)
     navigate_maze()
+    celly()
     basic.show_number(3)
     navigate_back()
-    celly()
     basic.show_number(4)
-    
+
+
 
 main()
