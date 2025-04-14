@@ -1,53 +1,18 @@
 # EG10118 Section 12 Project 2 Program: Bomb Sniffing Robot
 # Nathan Burke, Edan Czarobski, Ben Muckian, Jack Whitman
-radio.set_group(7)
 
 adjust_speed = 12
 straight_speed = 20 # Nominal speed of the robot
 left = True # Does the robot hug the left or right side of the line
 turn = 92 # This number should represent a right turn
-
-def red():
-    def onIn_background():
-        for i in range(3):
-            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0xff0000)
-            basic.pause(500)
-            CutebotPro.turn_off_all_headlights()
-        basic.pause(500)
-    control.in_background(onIn_background)
-    
-def green():
-    def onIn_background():
-        for i in range(3):
-            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x00ff00)
-            basic.pause(500)
-            CutebotPro.turn_off_all_headlights()
-        basic.pause(500)
-    control.in_background(onIn_background)
-
-def blue():
-    def onIn_background():
-        for i in range(3):
-            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x0000ff)
-            basic.pause(500)
-            CutebotPro.turn_off_all_headlights()
-        basic.pause(500)
-    control.in_background(onIn_background)
-
-def yellow():
-    def onIn_background():
-        for i in range(3):
-            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0xffff00)
-            basic.pause(500)
-            CutebotPro.turn_off_all_headlights()
-        basic.pause(500)
-    control.in_background(onIn_background)
     
 # when a button is pressed it changes the side the bot follows
+'''
 if input.button_is_pressed(Button.A):
     left = True
 if input.button_is_pressed(Button.B):
     left = False
+'''
 
 # Navigation parameters
 navigation = [[0, 0]]
@@ -77,7 +42,7 @@ def follow_line():
     offset = CutebotPro.get_offset()
 
     # If we want to follow the left side of the line, center ourselves at offset 1500
-    if left:
+    if True: #left:
         difference = offset - 1500
         difference = difference if difference > -1500 else -1500
     else:
@@ -103,7 +68,6 @@ def follow_line():
 def turn_right():
     global direction
     # Turn right
-    CutebotPro.pwm_cruise_control(0, 0)
     CutebotPro.trolley_steering(CutebotProTurn.RIGHT_IN_PLACE, turn)
     # Update direction, make sure rollover is ok
     direction = direction - 1
@@ -113,7 +77,6 @@ def turn_right():
 def turn_left():
     global direction
     # Turn left
-    CutebotPro.pwm_cruise_control(0, 0)
     CutebotPro.trolley_steering(CutebotProTurn.LEFT_IN_PLACE, turn)
     # Update direction, make sure rollover is ok
     direction = (direction + 1) % 4
@@ -161,72 +124,61 @@ def forward():
     
     # Record whether or not each sensor sees white
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
-    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
-    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
+    
     # Drive forward until we see the tape
     CutebotPro.pwm_cruise_control(adjust_speed, adjust_speed)
-    while one and two and three and four:
-        control.wait_micros(100)
+    while one and four:
+        basic.pause(1)
         one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
-        two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
-        three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
         four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
     # Stop on the tape
     CutebotPro.pwm_cruise_control(0, 0)
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
-    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) < 200
-    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) < 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
     # Turn right if only the left sensor sees the tape
     if not one:
         CutebotPro.pwm_cruise_control(0, adjust_speed)
         while four:
-            control.wait_micros(100)
+            basic.pause(1)
             four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
     # Turn left if only the right sensor sees the tape
     elif not four:
         CutebotPro.pwm_cruise_control(adjust_speed, 0)
         while one:
-            control.wait_micros(100)
+            basic.pause(1)
             one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
 
     ## Repeat the same process, but for leaving the tape
     CutebotPro.pwm_cruise_control(0, 0)
 
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
-    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) > 200
-    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) > 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
 
     CutebotPro.pwm_cruise_control(adjust_speed, adjust_speed)
 
-    while one and two and three and four:
-        control.wait_micros(100)
+    while one and four:
+        basic.pause(1)
         one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
-        two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) > 200
-        three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) > 200
         four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
 
     CutebotPro.pwm_cruise_control(0, 0)
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
-    two = CutebotPro.trackbitget_gray(TrackbitChannel.TWO) > 200
-    three = CutebotPro.trackbitget_gray(TrackbitChannel.THREE) > 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
 
     if not one:
         CutebotPro.pwm_cruise_control(0, adjust_speed)
         while four:
-            control.wait_micros(100)
+            basic.pause(1)
             four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
     elif not four:
         CutebotPro.pwm_cruise_control(adjust_speed, 0)
         while one:
-            control.wait_micros(100)
+            basic.pause(1)
             one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
 
     CutebotPro.pwm_cruise_control(0, 0)
@@ -311,7 +263,6 @@ def get_surroundings():
 
     if direction == 0:
         l = toward_1
-        f = toward_0
         r = toward_3
     elif direction == 1:
         l = toward_2
@@ -327,6 +278,7 @@ def get_surroundings():
 
 def move_block():
     obs_l, obs_r = get_surroundings() # Get the status of walls to the side for efficiency
+    '''
     if left: # If we are following the left side of the line
         obs_forward = obstacle() # Check if there is an obstacle in front
         if not obs_l: # If there's no saved wall to the left
@@ -370,7 +322,10 @@ def move_block():
                 turn_180()
                 forward()
         
-    else: # If we're following the right wall
+    else:
+    '''
+    if True:
+        # If we're following the right wall
         obs_forward = obstacle() # Check if there is an obstacle in front
         if not obs_r: # If there's no saved wall to the right
             # Turn right--if no obstacle, go forward
@@ -427,6 +382,7 @@ def navigate_back():
     optimize()
     # Optimized navigation path
     broadcast_solution()
+    navigation.insert(0, [-1, 0])
     num_steps = len(navigation)
     for step_num in range(2, num_steps + 1):
         next_step = navigation[num_steps - step_num]
@@ -487,28 +443,51 @@ def swirlIn():
 
 #repeats swirl "countdown" times and shows message
 def celly():
-    for i in range(countdown):
-        basic.show_number(countdown-i)
-        swirlOut()
-        swirlIn()
-    basic.show_string("BOMB FOUND!")
+    '''\
+    music.play(music.string_playable(" \
+            A4 - C5 - B4 - A4 - G4 - E4 - C4 - D4 - \
+            E4 G4 - F4 E4 - D4 - C4  ", 300),
+        music.PlaybackMode.IN_BACKGROUND)
+    '''
+    music.play(music.string_playable(
+                " E4 - - - D4 - E4 - F4 F4 - E4 F4 - - - \
+                F4 F4 - F4 E4 - F4 - G4 G4 - F4 G4 - - - \
+                A4 - C5 - B4 - A4 - G4 - E4 - C4 - - - \
+                E4 D4 - C4 E4 - D4 - C4 D4 - - G4 - - - \
+                E4 E4 - E4 D4 - E4 - F4 - - E4 F4 - - - \
+                F4 F4 - F4 E4 - F4 - G4 G4 - F4 G4 - - - \
+                A4 - C5 - B4 - A4 - G4 - E4 - C4 - D4 - \
+                E4 G4 - F4 E4 - D4 - C4 - ", 300), # removed \ G4 G4 - G4 G4 F4 E4 G4 \
+            music.PlaybackMode.LOOPING_IN_BACKGROUND)
+    
+    def onIn_background():
+        while True:
+            #swirlIn()
+            CutebotPro.color_light(CutebotProRGBLight.RGBR, 0x00ff00)
+            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x0000ff)
+            basic.pause(100)
+            #swirlOut()
+            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x00ff00)
+            CutebotPro.color_light(CutebotProRGBLight.RGBR, 0x0000ff)
+            basic.pause(100)
 
-def main():
-    radio.set_group(7)
-    radio.send_string("L")
-    basic.show_number(1)
-    while (not magnet_found()) or (not CutebotPro.get_grayscale_sensor_state(TrackbitStateType.TRACKING_STATE_0)):
-        follow_line()
-        control.wait_micros(1000)
-    CutebotPro.distance_running(CutebotProOrientation.ADVANCE, 17, CutebotProDistanceUnits.CM)
-    radio.send_string("M")
-    basic.show_number(2)
-    navigate_maze()
-    celly()
-    basic.show_number(3)
-    navigate_back()
-    basic.show_number(4)
+    control.in_background(onIn_background)
+
+    
 
 
+radio.set_group(7)
+while not magnet_found():
+    follow_line()
+    basic.pause(1)
 
-main()
+for i in range(100):
+    follow_line()
+    basic.pause(1)
+
+CutebotPro.distance_running(CutebotProOrientation.ADVANCE, 17, CutebotProDistanceUnits.CM)
+navigate_maze()
+celly()
+navigate_back()
+CutebotPro.cruise_control(-100, 100, CutebotProSpeedUnits.CMS)
+    

@@ -1,6 +1,5 @@
 //  EG10118 Section 12 Project 2 Program: Bomb Sniffing Robot
 //  Nathan Burke, Edan Czarobski, Ben Muckian, Jack Whitman
-radio.setGroup(7)
 let adjust_speed = 12
 let straight_speed = 20
 //  Nominal speed of the robot
@@ -8,59 +7,14 @@ let left = true
 //  Does the robot hug the left or right side of the line
 let turn = 92
 //  This number should represent a right turn
-function red() {
-    control.inBackground(function onIn_background() {
-        for (let i = 0; i < 3; i++) {
-            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0xff0000)
-            basic.pause(500)
-            CutebotPro.turnOffAllHeadlights()
-        }
-        basic.pause(500)
-    })
-}
-
-function green() {
-    control.inBackground(function onIn_background() {
-        for (let i = 0; i < 3; i++) {
-            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0x00ff00)
-            basic.pause(500)
-            CutebotPro.turnOffAllHeadlights()
-        }
-        basic.pause(500)
-    })
-}
-
-function blue() {
-    control.inBackground(function onIn_background() {
-        for (let i = 0; i < 3; i++) {
-            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0x0000ff)
-            basic.pause(500)
-            CutebotPro.turnOffAllHeadlights()
-        }
-        basic.pause(500)
-    })
-}
-
-function yellow() {
-    control.inBackground(function onIn_background() {
-        for (let i = 0; i < 3; i++) {
-            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0xffff00)
-            basic.pause(500)
-            CutebotPro.turnOffAllHeadlights()
-        }
-        basic.pause(500)
-    })
-}
-
 //  when a button is pressed it changes the side the bot follows
-if (input.buttonIsPressed(Button.A)) {
-    left = true
-}
+/** 
+if input.button_is_pressed(Button.A):
+    left = True
+if input.button_is_pressed(Button.B):
+    left = False
 
-if (input.buttonIsPressed(Button.B)) {
-    left = false
-}
-
+ */
 //  Navigation parameters
 let navigation = [[0, 0]]
 let direction = 0
@@ -90,7 +44,8 @@ function follow_line() {
     //  Get offset from line (+3000 to -3000)
     let offset = CutebotPro.getOffset()
     //  If we want to follow the left side of the line, center ourselves at offset 1500
-    if (left) {
+    if (true) {
+        // left:
         difference = offset - 1500
         difference = difference > -1500 ? difference : -1500
     } else {
@@ -121,7 +76,6 @@ function follow_line() {
 function turn_right() {
     
     //  Turn right
-    CutebotPro.pwmCruiseControl(0, 0)
     CutebotPro.trolleySteering(CutebotProTurn.RightInPlace, turn)
     //  Update direction, make sure rollover is ok
     direction = direction - 1
@@ -134,7 +88,6 @@ function turn_right() {
 function turn_left() {
     
     //  Turn left
-    CutebotPro.pwmCruiseControl(0, 0)
     CutebotPro.trolleySteering(CutebotProTurn.LeftInPlace, turn)
     //  Update direction, make sure rollover is ok
     direction = (direction + 1) % 4
@@ -188,36 +141,30 @@ function forward() {
     navigation.push([x, y])
     //  Record whether or not each sensor sees white
     let one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
-    let two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
-    let three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
     let four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
     //  Drive forward until we see the tape
     CutebotPro.pwmCruiseControl(adjust_speed, adjust_speed)
-    while (one && two && three && four) {
-        control.waitMicros(100)
+    while (one && four) {
+        basic.pause(1)
         one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
-        two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
-        three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
         four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
     }
     //  Stop on the tape
     CutebotPro.pwmCruiseControl(0, 0)
     one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
-    two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) < 200
-    three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) < 200
     four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
     //  Turn right if only the left sensor sees the tape
     if (!one) {
         CutebotPro.pwmCruiseControl(0, adjust_speed)
         while (four) {
-            control.waitMicros(100)
+            basic.pause(1)
             four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) < 200
         }
     } else if (!four) {
         //  Turn left if only the right sensor sees the tape
         CutebotPro.pwmCruiseControl(adjust_speed, 0)
         while (one) {
-            control.waitMicros(100)
+            basic.pause(1)
             one = CutebotPro.trackbitgetGray(TrackbitChannel.One) < 200
         }
     }
@@ -225,32 +172,26 @@ function forward() {
     // # Repeat the same process, but for leaving the tape
     CutebotPro.pwmCruiseControl(0, 0)
     one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
-    two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) > 200
-    three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
     four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
     CutebotPro.pwmCruiseControl(adjust_speed, adjust_speed)
-    while (one && two && three && four) {
-        control.waitMicros(100)
+    while (one && four) {
+        basic.pause(1)
         one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
-        two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) > 200
-        three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
         four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
     }
     CutebotPro.pwmCruiseControl(0, 0)
     one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
-    two = CutebotPro.trackbitgetGray(TrackbitChannel.Two) > 200
-    three = CutebotPro.trackbitgetGray(TrackbitChannel.Three) > 200
     four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
     if (!one) {
         CutebotPro.pwmCruiseControl(0, adjust_speed)
         while (four) {
-            control.waitMicros(100)
+            basic.pause(1)
             four = CutebotPro.trackbitgetGray(TrackbitChannel.Four) > 200
         }
     } else if (!four) {
         CutebotPro.pwmCruiseControl(adjust_speed, 0)
         while (one) {
-            control.waitMicros(100)
+            basic.pause(1)
             one = CutebotPro.trackbitgetGray(TrackbitChannel.One) > 200
         }
     }
@@ -336,7 +277,6 @@ function inside(goal: number[], container: number[][]): boolean {
 //  Get the
 function get_surroundings(): boolean[] {
     let l: boolean;
-    let f: boolean;
     let r: boolean;
     
     
@@ -349,7 +289,6 @@ function get_surroundings(): boolean[] {
     let toward_3 = inside([x, y], hwalls)
     if (direction == 0) {
         l = toward_1
-        f = toward_0
         r = toward_3
     } else if (direction == 1) {
         l = toward_2
@@ -369,58 +308,54 @@ function move_block() {
     let obs_forward: any;
     let [obs_l, obs_r] = get_surroundings()
     //  Get the status of walls to the side for efficiency
-    if (left) {
-        //  If we are following the left side of the line
-        obs_forward = obstacle()
-        //  Check if there is an obstacle in front
-        if (!obs_l) {
-            //  If there's no saved wall to the left
-            //  Turn left--if no obstacle, go forward
+    /** 
+    if left: # If we are following the left side of the line
+        obs_forward = obstacle() # Check if there is an obstacle in front
+        if not obs_l: # If there's no saved wall to the left
+            # Turn left--if no obstacle, go forward
             turn_left()
-            if (!obstacle()) {
+            if not obstacle():
                 forward()
-            } else if (!obs_forward) {
-                //  Otherwise, if no obstacle was in front, turn back and go
+            # Otherwise, if no obstacle was in front, turn back and go
+            elif not obs_forward:
                 turn_right()
                 forward()
-            } else if (!obs_r) {
-                //  Otherwise, if there's no saved wall to the right, turn around and check
+            # Otherwise, if there's no saved wall to the right, turn around and check
+            elif not obs_r:
                 turn_180()
-                //  If there's no obstacle, go
-                if (!obstacle()) {
+                # If there's no obstacle, go
+                if not obstacle():
                     forward()
-                } else {
-                    //  Otherwise, turn around and go back
+                # Otherwise, turn around and go back
+                else:
                     turn_right()
                     forward()
-                }
-                
-            } else {
-                //  If there was a saved wall to the right, turn back
+            # If there was a saved wall to the right, turn back
+            else:
                 turn_left()
                 forward()
-            }
-            
-        } else if (!obs_forward) {
-            forward()
-        } else if (!obs_r) {
-            //  Otherwise, if there's no saved wall to the right, go check
-            turn_right()
-            //  If no obstacle, go; otherwise, turn back
-            if (!obstacle()) {
+        else:
+            # If there was a saved wall to the left, go forward if possible
+            if not obs_forward:
                 forward()
-            } else {
+            # Otherwise, if there's no saved wall to the right, go check
+            elif not obs_r:
                 turn_right()
+                # If no obstacle, go; otherwise, turn back
+                if not obstacle():
+                    forward()
+                else:
+                    turn_right()
+                    forward()
+            # If there was a saved wall to the right, turn back
+            else:
+                turn_180()
                 forward()
-            }
-            
-        } else {
-            //  If there was a saved wall to the right, turn back
-            turn_180()
-            forward()
-        }
         
-    } else {
+    else:
+    
+ */
+    if (true) {
         //  If we're following the right wall
         obs_forward = obstacle()
         //  Check if there is an obstacle in front
@@ -496,6 +431,7 @@ function navigate_back() {
     optimize()
     //  Optimized navigation path
     broadcast_solution()
+    navigation.insertAt(0, [-1, 0])
     let num_steps = navigation.length
     for (let step_num = 2; step_num < num_steps + 1; step_num++) {
         next_step = navigation[num_steps - step_num]
@@ -572,30 +508,37 @@ function swirlIn() {
 
 // repeats swirl "countdown" times and shows message
 function celly() {
-    for (let i = 0; i < countdown; i++) {
-        basic.showNumber(countdown - i)
-        swirlOut()
-        swirlIn()
-    }
-    basic.showString("BOMB FOUND!")
+    /**     music.play(music.string_playable("             A4 - C5 - B4 - A4 - G4 - E4 - C4 - D4 -             E4 G4 - F4 E4 - D4 - C4  ", 300),
+        music.PlaybackMode.IN_BACKGROUND)
+    
+ */
+    music.play(music.stringPlayable(" E4 - - - D4 - E4 - F4 F4 - E4 F4 - - -                 F4 F4 - F4 E4 - F4 - G4 G4 - F4 G4 - - -                 A4 - C5 - B4 - A4 - G4 - E4 - C4 - - -                 E4 D4 - C4 E4 - D4 - C4 D4 - - G4 - - -                 E4 E4 - E4 D4 - E4 - F4 - - E4 F4 - - -                 F4 F4 - F4 E4 - F4 - G4 G4 - F4 G4 - - -                 A4 - C5 - B4 - A4 - G4 - E4 - C4 - D4 -                 E4 G4 - F4 E4 - D4 - C4 - ", 300), music.PlaybackMode.LoopingInBackground)
+    //  removed \ G4 G4 - G4 G4 F4 E4 G4 \
+    control.inBackground(function onIn_background() {
+        while (true) {
+            // swirlIn()
+            CutebotPro.colorLight(CutebotProRGBLight.RGBR, 0x00ff00)
+            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0x0000ff)
+            basic.pause(100)
+            // swirlOut()
+            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0x00ff00)
+            CutebotPro.colorLight(CutebotProRGBLight.RGBR, 0x0000ff)
+            basic.pause(100)
+        }
+    })
 }
 
-function main() {
-    radio.setGroup(7)
-    radio.sendString("L")
-    basic.showNumber(1)
-    while (!magnet_found() || !CutebotPro.getGrayscaleSensorState(TrackbitStateType.Tracking_State_0)) {
-        follow_line()
-        control.waitMicros(1000)
-    }
-    CutebotPro.distanceRunning(CutebotProOrientation.Advance, 17, CutebotProDistanceUnits.Cm)
-    radio.sendString("M")
-    basic.showNumber(2)
-    navigate_maze()
-    celly()
-    basic.showNumber(3)
-    navigate_back()
-    basic.showNumber(4)
+radio.setGroup(7)
+while (!magnet_found()) {
+    follow_line()
+    basic.pause(1)
 }
-
-main()
+for (let i = 0; i < 100; i++) {
+    follow_line()
+    basic.pause(1)
+}
+CutebotPro.distanceRunning(CutebotProOrientation.Advance, 17, CutebotProDistanceUnits.Cm)
+navigate_maze()
+celly()
+navigate_back()
+CutebotPro.cruiseControl(-100, 100, CutebotProSpeedUnits.Cms)
