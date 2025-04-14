@@ -7,6 +7,41 @@ straight_speed = 20 # Nominal speed of the robot
 left = True # Does the robot hug the left or right side of the line
 turn = 92 # This number should represent a right turn
 
+def red():
+    def onIn_background():
+        for i in range(3):
+            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0xff0000)
+            basic.pause(500)
+            CutebotPro.turn_off_all_headlights()
+        basic.pause(500)
+
+def green():
+    def onIn_background():
+        for i in range(3):
+            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x00ff00)
+            basic.pause(500)
+            CutebotPro.turn_off_all_headlights()
+        basic.pause(500)
+    control.in_background(onIn_background)
+
+def blue():
+    def onIn_background():
+        for i in range(3):
+            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x0000ff)
+            basic.pause(500)
+            CutebotPro.turn_off_all_headlights()
+        basic.pause(500)
+    control.in_background(onIn_background)
+
+def yellow():
+    def onIn_background():
+        for i in range(3):
+            CutebotPro.color_light(CutebotProRGBLight.RGBL, 0xffff00)
+            basic.pause(500)
+            CutebotPro.turn_off_all_headlights()
+        basic.pause(500)
+    control.in_background(onIn_background)
+    
 # when a button is pressed it changes the side the bot follows
 if input.button_is_pressed(Button.A):
     left = True

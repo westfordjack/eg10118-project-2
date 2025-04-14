@@ -8,6 +8,51 @@ let left = true
 //  Does the robot hug the left or right side of the line
 let turn = 92
 //  This number should represent a right turn
+function red() {
+    function onIn_background() {
+        for (let i = 0; i < 3; i++) {
+            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0xff0000)
+            basic.pause(500)
+            CutebotPro.turnOffAllHeadlights()
+        }
+        basic.pause(500)
+    }
+    
+}
+
+function green() {
+    control.inBackground(function onIn_background() {
+        for (let i = 0; i < 3; i++) {
+            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0x00ff00)
+            basic.pause(500)
+            CutebotPro.turnOffAllHeadlights()
+        }
+        basic.pause(500)
+    })
+}
+
+function blue() {
+    control.inBackground(function onIn_background() {
+        for (let i = 0; i < 3; i++) {
+            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0x0000ff)
+            basic.pause(500)
+            CutebotPro.turnOffAllHeadlights()
+        }
+        basic.pause(500)
+    })
+}
+
+function yellow() {
+    control.inBackground(function onIn_background() {
+        for (let i = 0; i < 3; i++) {
+            CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0xffff00)
+            basic.pause(500)
+            CutebotPro.turnOffAllHeadlights()
+        }
+        basic.pause(500)
+    })
+}
+
 //  when a button is pressed it changes the side the bot follows
 if (input.buttonIsPressed(Button.A)) {
     left = true
