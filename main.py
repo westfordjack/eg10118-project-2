@@ -353,7 +353,7 @@ def move_block():
 # Navigate the maze
 def navigate_maze():
     # Go until the magnet is found, following the left wall
-    for i in range(2):
+    for i in range(5):
         move_block()
     while not magnet_found():
         move_block()
@@ -430,9 +430,6 @@ def celly():
         swirlIn()
     basic.show_string("BOMB FOUND!")
     radio.send_string("BOMB FOUND!")
-    #this is also where we would broadcast solution back to the first robot
-
-
 
 def main():
     radio.set_group(7)

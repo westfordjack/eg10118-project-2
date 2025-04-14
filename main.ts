@@ -405,7 +405,7 @@ function move_block() {
 //  Navigate the maze
 function navigate_maze() {
     //  Go until the magnet is found, following the left wall
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 5; i++) {
         move_block()
     }
     while (!magnet_found()) {
@@ -508,7 +508,6 @@ function celly() {
     radio.sendString("BOMB FOUND!")
 }
 
-// this is also where we would broadcast solution back to the first robot
 function main() {
     radio.setGroup(7)
     radio.sendString("L")
