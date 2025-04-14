@@ -14,7 +14,8 @@ def red():
             basic.pause(500)
             CutebotPro.turn_off_all_headlights()
         basic.pause(500)
-
+    control.in_background(onIn_background)
+    
 def green():
     def onIn_background():
         for i in range(3):

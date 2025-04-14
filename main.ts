@@ -9,15 +9,14 @@ let left = true
 let turn = 92
 //  This number should represent a right turn
 function red() {
-    function onIn_background() {
+    control.inBackground(function onIn_background() {
         for (let i = 0; i < 3; i++) {
             CutebotPro.colorLight(CutebotProRGBLight.RGBL, 0xff0000)
             basic.pause(500)
             CutebotPro.turnOffAllHeadlights()
         }
         basic.pause(500)
-    }
-    
+    })
 }
 
 function green() {
