@@ -6,27 +6,29 @@ straight_speed = 20 # Nominal speed of the robot
 left = True # Does the robot hug the left or right side of the line
 turn = 92 # This number should represent a right turn
     
-# when a button is pressed it changes the side the bot follows
-'''
+# When a button is pressed it changes the side of the line and of the maze that the bot follows
 if input.button_is_pressed(Button.A):
     left = True
 if input.button_is_pressed(Button.B):
     left = False
-'''
+
 
 # Navigation parameters
-navigation = [[0, 0]]
-direction = 0 # 0 = East, 1 = North, 2 = West, 3 = South
+navigation = [[0, 0]] # List of all points visited by the robot
+direction = 0 # Current direction. 0 = East, 1 = North, 2 = West, 3 = South
+
+# Current x and y of the robot
 x = navigation[0][0]
 y = navigation[0][1]
 
-# Wall finding efficiency
+# Lists of the locations of all known walls, so that checking is more efficient (less repetitive)
 hwalls = [[0, 0]]
 vwalls = [[0, 0]]
-hwalls.clear() # Clear to avoid TypeScript type errors
+# Create non-empty lists, then clear to avoid TypeScript type errors
+hwalls.clear()
 vwalls.clear()
 
-# Magnetic baseline and threshold
+# Get magnetic baseline and set threshold for detecting a magnet
 baseline = abs(input.magnetic_force(Dimension.Z))
 magnetic_threshold = 100 # in microteslas
 
@@ -109,7 +111,7 @@ def forward():
     global x, y
     global straight_speed
 
-    # Update position coordinates
+    # Update position coordinates based on direction
     if direction == 0:
         x += 1
     elif direction == 1:
@@ -131,6 +133,7 @@ def forward():
     CutebotPro.pwm_cruise_control(adjust_speed, adjust_speed)
     while one and four:
         basic.pause(1)
+        # Update status of seeing/not seeing tape
         one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
         four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) < 200
 
@@ -153,34 +156,39 @@ def forward():
             basic.pause(1)
             one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) < 200
 
-    ## Repeat the same process, but for leaving the tape
+    # Repeat the same process, but for leaving the tape
     CutebotPro.pwm_cruise_control(0, 0)
 
+    # Check whether or not we see the tape and go forward
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
-
     CutebotPro.pwm_cruise_control(adjust_speed, adjust_speed)
 
+    # Go forward until we don't see the tape anymore
     while one and four:
         basic.pause(1)
         one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
         four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
 
+    # Stop
     CutebotPro.pwm_cruise_control(0, 0)
     one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
     four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
 
+    # Turn right if only the left sensor sees the edge
     if not one:
         CutebotPro.pwm_cruise_control(0, adjust_speed)
         while four:
             basic.pause(1)
             four = CutebotPro.trackbitget_gray(TrackbitChannel.FOUR) > 200
+    # Turn left if only the right sensor sees the edge
     elif not four:
         CutebotPro.pwm_cruise_control(adjust_speed, 0)
         while one:
             basic.pause(1)
             one = CutebotPro.trackbitget_gray(TrackbitChannel.ONE) > 200
 
+    # Stop
     CutebotPro.pwm_cruise_control(0, 0)
 
     # Advance forward to the center of the current square
@@ -191,6 +199,9 @@ def forward():
 # Broadcast the solution to another bot
 def broadcast_solution():
     global navigation
+    # String to add instructions
+    instructions = ""
+
     # For each direction traveled
     for i in range(1, len(navigation)):
         # Find change in x or y
@@ -198,13 +209,15 @@ def broadcast_solution():
         dy = navigation[i][1] - navigation[i - 1][1]
         # Send corresponding direction of the move represented by the dx/dy
         if (dx == 1):
-            radio.send_number(0)
+            instructions += 'R' # Right
         elif (dx == -1):
-            radio.send_number(2)
+            instructions += 'L' # Left
         elif (dy == 1):
-            radio.send_number(1)
+            instructions += 'U' # Up
         else:
-            radio.send_number(3)
+           instructions += 'D' # Down
+    radio.send_string(instructions) # Send over the instructions
+        
 
 
 # Optimize return solution
@@ -247,7 +260,7 @@ def inside(goal: List[number], container: List[List[number]]): # Type declaratio
     # Not found; return false
     return False
 
-# Get the
+# Get if there are known walls to the left and/or right of the bot
 def get_surroundings():
     global x
     global y
@@ -255,12 +268,13 @@ def get_surroundings():
     global hwalls
     global vwalls
 
+    # Check if there are known walls in each cardinal direction
     toward_0 = inside([x + 1, y], vwalls)
     toward_1 = inside([x, y + 1], hwalls)
     toward_2 = inside([x, y], vwalls)
     toward_3 = inside([x, y], hwalls)
 
-
+    # Assign left and right based on the cardinal direction the robot is facing
     if direction == 0:
         l = toward_1
         r = toward_3
@@ -274,12 +288,13 @@ def get_surroundings():
         l = toward_0
         r = toward_2
 
+    # Return results
     return l, r
 
+# Move forward one block in the maze
 def move_block():
     obs_l, obs_r = get_surroundings() # Get the status of walls to the side for efficiency
-    '''
-    if left: # If we are following the left side of the line
+    if True: # left: # If we are following the left side of the line
         obs_forward = obstacle() # Check if there is an obstacle in front
         if not obs_l: # If there's no saved wall to the left
             # Turn left--if no obstacle, go forward
@@ -321,10 +336,7 @@ def move_block():
             else:
                 turn_180()
                 forward()
-        
     else:
-    '''
-    if True:
         # If we're following the right wall
         obs_forward = obstacle() # Check if there is an obstacle in front
         if not obs_r: # If there's no saved wall to the right
@@ -370,24 +382,33 @@ def move_block():
 
 # Navigate the maze
 def navigate_maze():
-    # Go until the magnet is found, following the left wall
+    # Move the first 5 squares to avoid seeing the magnet twice
     for i in range(5):
         move_block()
+    # Move until we see the magnet
     while not magnet_found():
         move_block()
         
 
-# Head back to the start
+# Function to head back to the start
 def navigate_back():
+    # Optimize navigation path
     optimize()
-    # Optimized navigation path
+    # Broadcast optimized solution to the other micro BBC
     broadcast_solution()
+    # Add final instruction to exit the maze when done navigating back
     navigation.insert(0, [-1, 0])
+    # Loop through navigation steps
     num_steps = len(navigation)
     for step_num in range(2, num_steps + 1):
+        # Loop backwards-- start at the last step
         next_step = navigation[num_steps - step_num]
+
+        # Get change in x and y
         dx = next_step[0] - x
         dy = next_step[1] - y
+
+        # Get the direction we need to move
         if dx == 1:
             goal_direction = 0
         elif dy == 1:
@@ -396,6 +417,8 @@ def navigate_back():
             goal_direction = 2
         else:
             goal_direction = 3
+        
+        # Get how much we need to turn to face that direction, then turn
         change_dir = goal_direction - direction
         if change_dir == 1 or change_dir == -3:
             turn_left()
@@ -403,32 +426,37 @@ def navigate_back():
             turn_180()
         elif change_dir == 3 or change_dir == -1:
             turn_right()
+
+        # Move forward as long as we have space to move
         if dx != 0 or dy != 0:
             forward()
 
-#celebration!!
+# Celebration constants
 rad = 0
 countdown = 3
 
-#sprite swirls out from center
+# Swirl a dot out from center
 def swirlOut():
-    my_sprite = game.create_sprite(2, 2)
+    # Create dot
+    my_sprite = game.create_sprite(2, 2) #creates a sprite in the middle of the screen
     global rad
+    # Loop through all points and move the sprite each step
     for i in range(5):
         for j in range(2):
             for x in range(rad):
-                my_sprite.move(1)
+                my_sprite.move(1) #move one tile forward
                 basic.pause(20)
+            # Turn the sprite when it gets to the end
             my_sprite.turn(Direction.RIGHT, 90)
-        rad = rad+1
-    for x in range(rad-1):
+        rad = rad+1 #adjusts radius of sprite's  movement so it swirls outwards
+    for x in range(rad-1): #extra movement at the end so the sprite comepletes a full rotation around the screen
         my_sprite.move(1)
         basic.pause(25)
-    my_sprite.delete()
+    my_sprite.delete() #deletes the sprite so it doesn't remain on the screen during other sections of code
 
-#sprite swirls back in to center
+# Swirl a dot back into the center; same process as swirling out
 def swirlIn():
-    my_sprite = game.create_sprite(0, 4)
+    my_sprite = game.create_sprite(0, 4) #creates a sprite in the bottom left corner
     global rad
 
     my_sprite.turn(Direction.LEFT, 90)
@@ -438,17 +466,17 @@ def swirlIn():
                 my_sprite.move(1)
                 basic.pause(20)
             my_sprite.turn(Direction.LEFT, 90)
-        rad -= 1
+        rad -= 1 #adjusts radius so every other line of movement is one less tile forward
     my_sprite.delete()
 
-#repeats swirl "countdown" times and shows message
+# Celebration protocol
 def celly():
-    '''\
+    # Play fight song into
     music.play(music.string_playable(" \
             A4 - C5 - B4 - A4 - G4 - E4 - C4 - D4 - \
             E4 G4 - F4 E4 - D4 - C4  ", 300),
         music.PlaybackMode.IN_BACKGROUND)
-    '''
+    # Loop the main fight song
     music.play(music.string_playable(
                 " E4 - - - D4 - E4 - F4 F4 - E4 F4 - - - \
                 F4 F4 - F4 E4 - F4 - G4 G4 - F4 G4 - - - \
@@ -457,37 +485,41 @@ def celly():
                 E4 E4 - E4 D4 - E4 - F4 - - E4 F4 - - - \
                 F4 F4 - F4 E4 - F4 - G4 G4 - F4 G4 - - - \
                 A4 - C5 - B4 - A4 - G4 - E4 - C4 - D4 - \
-                E4 G4 - F4 E4 - D4 - C4 - ", 300), # removed \ G4 G4 - G4 G4 F4 E4 G4 \
+                E4 G4 - F4 E4 - D4 - C4 - ", 300),
             music.PlaybackMode.LOOPING_IN_BACKGROUND)
     
+    # Loop in the background the swirl animation and flashing the lights blue/green
     def onIn_background():
         while True:
-            #swirlIn()
+            swirlIn()
             CutebotPro.color_light(CutebotProRGBLight.RGBR, 0x00ff00)
             CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x0000ff)
             basic.pause(100)
-            #swirlOut()
+            swirlOut()
             CutebotPro.color_light(CutebotProRGBLight.RGBL, 0x00ff00)
             CutebotPro.color_light(CutebotProRGBLight.RGBR, 0x0000ff)
             basic.pause(100)
 
     control.in_background(onIn_background)
+  
+# Set correct radio group
+radio.set_group(6)
 
-    
-
-
-radio.set_group(7)
+# Follow the line until magnet is found
 while not magnet_found():
     follow_line()
     basic.pause(1)
 
-for i in range(100):
+# Keep following after finding the magnet
+for i in range(50):
     follow_line()
     basic.pause(1)
 
+# Go forward to the center of the first square
 CutebotPro.distance_running(CutebotProOrientation.ADVANCE, 17, CutebotProDistanceUnits.CM)
+
+# Navigate, celebrate, head back, and spin once the robot leaves to celebrate even more!
 navigate_maze()
 celly()
 navigate_back()
 CutebotPro.cruise_control(-100, 100, CutebotProSpeedUnits.CMS)
-    
